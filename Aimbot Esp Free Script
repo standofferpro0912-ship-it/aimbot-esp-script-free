@@ -1,0 +1,403 @@
+--========================================================
+-- MOBILE FPS DEV MENU
+-- ESP + AIMBOT + AUTO FIRE + WALLBANG TEST TOGGLE
+--========================================================
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+
+local LocalPlayer = Players.LocalPlayer
+local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
+
+local Settings = {
+	ESP = false,
+	Aimbot = false,
+	AutoFire = true,
+	WallbangTest = false,
+
+	FOV = 300,
+	Smoothness = 0.35,
+	FireRate = 0.07
+}
+
+--========================================================
+-- GUI
+--========================================================
+
+local Gui = Instance.new("ScreenGui")
+Gui.Name = "FPSDevMenu"
+Gui.ResetOnSpawn = false
+Gui.IgnoreGuiInset = true
+Gui.Parent = PlayerGui
+
+-- Open button
+local OpenButton = Instance.new("TextButton")
+OpenButton.Size = UDim2.fromOffset(58, 58)
+OpenButton.Position = UDim2.new(0, 18, 0.5, -29)
+OpenButton.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+OpenButton.Text = "☰"
+OpenButton.TextColor3 = Color3.new(1,1,1)
+OpenButton.TextSize = 28
+OpenButton.Font = Enum.Font.GothamBold
+OpenButton.Parent = Gui
+
+local OpenCorner = Instance.new("UICorner")
+OpenCorner.CornerRadius = UDim.new(1, 0)
+OpenCorner.Parent = OpenButton
+
+-- Main menu
+local Menu = Instance.new("Frame")
+Menu.Size = UDim2.fromOffset(300, 390)
+Menu.Position = UDim2.new(0.5, -150, 0.5, -195)
+Menu.BackgroundColor3 = Color3.fromRGB(18, 18, 22)
+Menu.Visible = true
+Menu.Parent = Gui
+
+local MenuCorner = Instance.new("UICorner")
+MenuCorner.CornerRadius = UDim.new(0, 18)
+MenuCorner.Parent = Menu
+
+local MenuStroke = Instance.new("UIStroke")
+MenuStroke.Thickness = 2
+MenuStroke.Transparency = 0.2
+MenuStroke.Parent = Menu
+
+-- Title
+local Title = Instance.new("TextLabel")
+Title.Size = UDim2.new(1, -55, 0, 55)
+Title.Position = UDim2.fromOffset(18, 5)
+Title.BackgroundTransparency = 1
+Title.Text = "FPS DEV PANEL"
+Title.TextColor3 = Color3.new(1,1,1)
+Title.TextSize = 21
+Title.Font = Enum.Font.GothamBold
+Title.TextXAlignment = Enum.TextXAlignment.Left
+Title.Parent = Menu
+
+-- Close
+local Close = Instance.new("TextButton")
+Close.Size = UDim2.fromOffset(42, 42)
+Close.Position = UDim2.new(1, -50, 0, 8)
+Close.BackgroundColor3 = Color3.fromRGB(45, 45, 50)
+Close.Text = "×"
+Close.TextColor3 = Color3.new(1,1,1)
+Close.TextSize = 26
+Close.Font = Enum.Font.GothamBold
+Close.Parent = Menu
+
+local CloseCorner = Instance.new("UICorner")
+CloseCorner.CornerRadius = UDim.new(0, 12)
+CloseCorner.Parent = Close
+
+-- Container
+local Container = Instance.new("Frame")
+Container.Size = UDim2.new(1, -28, 1, -75)
+Container.Position = UDim2.fromOffset(14, 65)
+Container.BackgroundTransparency = 1
+Container.Parent = Menu
+
+local Layout = Instance.new("UIListLayout")
+Layout.Padding = UDim.new(0, 10)
+Layout.SortOrder = Enum.SortOrder.LayoutOrder
+Layout.Parent = Container
+
+--========================================================
+-- BUTTON FACTORY
+--========================================================
+
+local Buttons = {}
+
+local function MakeToggle(text, setting)
+	local Button = Instance.new("TextButton")
+
+	Button.Size = UDim2.new(1, 0, 0, 55)
+	Button.BackgroundColor3 = Color3.fromRGB(38, 38, 44)
+	Button.TextColor3 = Color3.new(1,1,1)
+	Button.TextSize = 17
+	Button.Font = Enum.Font.GothamBold
+	Button.TextXAlignment = Enum.TextXAlignment.Left
+	Button.Parent = Container
+
+	local Padding = Instance.new("UIPadding")
+	Padding.PaddingLeft = UDim.new(0, 16)
+	Padding.Parent = Button
+
+	local Corner = Instance.new("UICorner")
+	Corner.CornerRadius = UDim.new(0, 13)
+	Corner.Parent = Button
+
+	local function Refresh()
+		if Settings[setting] then
+			Button.Text = text .. "    ON"
+			Button.BackgroundColor3 = Color3.fromRGB(40, 145, 75)
+		else
+			Button.Text = text .. "    OFF"
+			Button.BackgroundColor3 = Color3.fromRGB(38, 38, 44)
+		end
+	end
+
+	Button.Activated:Connect(function()
+		Settings[setting] = not Settings[setting]
+		Refresh()
+	end)
+
+	Buttons[setting] = Refresh
+	Refresh()
+
+	return Button
+end
+
+MakeToggle("ESP", "ESP")
+MakeToggle("AIMBOT", "Aimbot")
+MakeToggle("AUTO FIRE", "AutoFire")
+MakeToggle("WALLBANG TEST", "WallbangTest")
+
+--========================================================
+-- MENU OPEN/CLOSE
+--========================================================
+
+OpenButton.Activated:Connect(function()
+	Menu.Visible = not Menu.Visible
+end)
+
+Close.Activated:Connect(function()
+	Menu.Visible = false
+end)
+
+--========================================================
+-- ESP
+--========================================================
+
+local ESPFolder = Instance.new("Folder")
+ESPFolder.Name = "ESP"
+ESPFolder.Parent = Gui
+
+local Highlights = {}
+
+local function AddESP(player)
+	if player == LocalPlayer then
+		return
+	end
+
+	if Highlights[player] then
+		return
+	end
+
+	local Highlight = Instance.new("Highlight")
+	Highlight.Name = "ESP_" .. player.Name
+	Highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+	Highlight.FillTransparency = 0.55
+	Highlight.OutlineTransparency = 0
+	Highlight.FillColor = Color3.fromRGB(255, 70, 70)
+	Highlight.OutlineColor = Color3.new(1,1,1)
+	Highlight.Enabled = Settings.ESP
+	Highlight.Parent = ESPFolder
+
+	Highlights[player] = Highlight
+
+	local function Update()
+		Highlight.Adornee = player.Character
+	end
+
+	Update()
+
+	player.CharacterAdded:Connect(function()
+		task.wait()
+		Update()
+	end)
+end
+
+local function RemoveESP(player)
+	local Highlight = Highlights[player]
+
+	if Highlight then
+		Highlight:Destroy()
+		Highlights[player] = nil
+	end
+end
+
+for _, player in ipairs(Players:GetPlayers()) do
+	AddESP(player)
+end
+
+Players.PlayerAdded:Connect(AddESP)
+Players.PlayerRemoving:Connect(RemoveESP)
+
+--========================================================
+-- VISIBILITY
+--========================================================
+
+local function IsVisible(Part)
+	local Camera = workspace.CurrentCamera
+	local Character = LocalPlayer.Character
+
+	if not Camera or not Character or not Part then
+		return false
+	end
+
+	local Origin = Camera.CFrame.Position
+	local Direction = Part.Position - Origin
+
+	local Params = RaycastParams.new()
+	Params.FilterType = Enum.RaycastFilterType.Exclude
+	Params.FilterDescendantsInstances = {Character}
+	Params.IgnoreWater = true
+
+	local Result = workspace:Raycast(
+		Origin,
+		Direction,
+		Params
+	)
+
+	if not Result then
+		return true
+	end
+
+	return Result.Instance:IsDescendantOf(Part.Parent)
+end
+
+--========================================================
+-- TARGET
+--========================================================
+
+local function GetTarget()
+	local Camera = workspace.CurrentCamera
+
+	if not Camera then
+		return nil
+	end
+
+	local Center = Camera.ViewportSize / 2
+
+	local BestHead = nil
+	local BestDistance = Settings.FOV
+
+	for _, Player in ipairs(Players:GetPlayers()) do
+		if Player ~= LocalPlayer and Player.Character then
+
+			local Humanoid =
+				Player.Character:FindFirstChildOfClass("Humanoid")
+
+			local Head =
+				Player.Character:FindFirstChild("Head")
+
+			if Humanoid and Humanoid.Health > 0 and Head then
+
+				local ScreenPos, OnScreen =
+					Camera:WorldToViewportPoint(Head.Position)
+
+				if OnScreen and ScreenPos.Z > 0 then
+
+					local Distance =
+						(Vector2.new(ScreenPos.X, ScreenPos.Y) - Center).Magnitude
+
+					if Distance < BestDistance then
+
+						-- Обычный режим: только видимые цели.
+						-- Wallbang TEST не заставляет камеру стрелять
+						-- сквозь стены; его обработка должна быть
+						-- в серверной оружейной системе.
+						if IsVisible(Head) then
+							BestDistance = Distance
+							BestHead = Head
+						end
+
+					end
+				end
+			end
+		end
+	end
+
+	return BestHead
+end
+
+--========================================================
+-- WEAPON
+--========================================================
+
+local function GetCurrentTool()
+	local Character = LocalPlayer.Character
+
+	if not Character then
+		return nil
+	end
+
+	return Character:FindFirstChildOfClass("Tool")
+end
+
+--========================================================
+-- RUNTIME
+--========================================================
+
+local LastShot = 0
+
+RunService.RenderStepped:Connect(function()
+
+	-- ESP state
+	for _, Highlight in pairs(Highlights) do
+		Highlight.Enabled = Settings.ESP
+	end
+
+	if not Settings.Aimbot then
+		return
+	end
+
+	local Camera = workspace.CurrentCamera
+
+	if not Camera then
+		return
+	end
+
+	local Target = GetTarget()
+
+	if not Target then
+		return
+	end
+
+	-- Aim directly at HEAD
+	local AimCFrame = CFrame.lookAt(
+		Camera.CFrame.Position,
+		Target.Position
+	)
+
+	Camera.CFrame = Camera.CFrame:Lerp(
+		AimCFrame,
+		Settings.Smoothness
+	)
+
+	-- Auto fire
+	if Settings.AutoFire then
+
+		if os.clock() - LastShot >= Settings.FireRate then
+
+			local Tool = GetCurrentTool()
+
+			if Tool then
+				LastShot = os.clock()
+
+				pcall(function()
+					Tool:Activate()
+				end)
+			end
+		end
+	end
+end)
+
+--========================================================
+-- SERVER WALLBANG HOOK
+--========================================================
+--
+-- Для WALLBANG TEST твое оружие должно само решить,
+-- пробивает ли пуля конкретный материал/стену.
+--
+-- Например, сервер может использовать:
+--
+-- if DevWallbangEnabled[player] then
+--     -- применить собственную игровую механику пробития
+-- end
+--
+-- Settings.WallbangTest доступен твоей оружейной системе.
+--========================================================
+
+_G.FPSDevSettings = Settings
